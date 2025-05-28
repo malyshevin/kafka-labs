@@ -1,0 +1,23 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = "Kafka chat"
+authors = [{name = "QQ", email = "QQ@mail.ru"}]
+requires-python = ">=3.8"
+dependencies = [
+    "flask",
+    "flask_socketio",
+    "eventlet",
+    "kafka-python",
+    "faust-streaming[rocksdb]"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

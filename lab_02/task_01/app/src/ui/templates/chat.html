@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebChat - Чат</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body { max-width: 600px; margin: 0 auto; padding-top: 32px; background: #f9fafb; }
+        .chatbox { background: #fff; border-radius: .5rem; border:1px solid #ececec; height: 310px; margin-bottom: 16px; padding: 15px 10px; overflow-y: auto; font-size: 1.08em; box-shadow: 0 2px 10px rgba(80,80,80,0.03);}
+        .my-msg { color: #217a3c; }
+    </style>
+</head>
+<body>
+    <div class="mb-3 border-bottom pb-2 d-flex align-items-center justify-content-between">
+        <h5>Ваш ID: <b>{{ user_id }}</b></h5>
+        <a href="{{ url_for('logout') }}">Выйти</a>
+    </div>
+
+    <form class="mb-3" onsubmit="return false;">
+        <div class="form-row mb-2">
+            <div class="col">
+                <input type="text" id="to_id" class="form-control" placeholder="ID получателя">
+            </div>
+            <div class="col-5">
+                <input type="text" id="msg" class="form-control" placeholder="Текст сообщения">
+            </div>
+            <div class="col-auto">
+                <button id="send" class="btn btn-success btn-block" type="button">Отправить</button>
+            </div>
+        </div>
+        <div class="form-row mb-2">
+            <div class="col">
+                <input type="text" id="block_id" class="form-control" placeholder="ID для (раз)блокировки">
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-danger btn-sm btn-block" id="block_btn" type="button">Заблокировать</button>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-warning btn-sm btn-block" id="unblock_btn" type="button">Разблокировать</button>
+            </div>
+        </div>
+        <div class="form-row mb-2">
+            <div class="col">
+                <input type="text" id="word_input" class="form-control" placeholder="Слово для (раз)бана">
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-danger btn-sm btn-block" id="banword_btn" type="button">Забанить слово</button>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-primary btn-sm btn-block" id="unbanword_btn" type="button">Разблокировать слово</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="chatbox" id="chatbox"></div>
+
+<script>
+    var socket = io();
+    var user_id = {{ user_id|tojson|safe }};
+
+    socket.emit("join", {"user_id": user_id});
+
+    document.getElementById("send").onclick = function() {
+        var to_id = document.getElementById("to_id").value;
+        var msg = document.getElementById("msg").value;
+        if (!to_id) return alert("Введите ID получателя");
+        if (!msg) return alert("Введите текст сообщения");
+        socket.emit("send_message", {
+            "from_id": user_id,
+            "to_id": to_id,
+            "text": msg
+        });
+        appendMessage("Я", msg, true, to_id);
+        document.getElementById("msg").value = '';
+    };
+
+    document.getElementById("block_btn").onclick = function(e) {
+        e.preventDefault();
+        var block_id = document.getElementById("block_id").value;
+        if (!block_id) return alert("Введите ID для блокировки");
+        socket.emit("block_user", {
+            "user_id": user_id,
+            "block_id": block_id
+        });
+        document.getElementById("block_id").value = '';
+    };
+
+    document.getElementById("unblock_btn").onclick = function(e) {
+        e.preventDefault();
+        var unblock_id = document.getElementById("block_id").value;
+        if (!unblock_id) return alert("Введите ID для разблокировки");
+        socket.emit("unblock_user", {
+            "user_id": user_id,
+            "block_id": unblock_id
+        });
+        document.getElementById("block_id").value = '';
+    };
+
+    document.getElementById("banword_btn").onclick = function(e) {
+        e.preventDefault();
+        var banword = document.getElementById("word_input").value.trim();
+        if (!banword) return alert("Введите слово для бана");
+        socket.emit("ban_word", {
+            "user_id": user_id,
+            "word": banword
+        });
+        document.getElementById("word_input").value = '';
+    };
+
+    document.getElementById("unbanword_btn").onclick = function(e) {
+        e.preventDefault();
+        var unbanword = document.getElementById("word_input").value.trim();
+        if (!unbanword) return alert("Введите слово для разбана");
+        socket.emit("unban_word", {
+            "user_id": user_id,
+            "word": unbanword
+        });
+        document.getElementById("word_input").value = '';
+    };
+
+    socket.on("message_sent", function(data){
+        if (!data.ok) {
+            alert("Ошибка отправки: "+(data.error||""));
+        }
+    });
+    socket.on("new_message", function(data) {
+        if(data && data.from_id && data.text) {
+            appendMessage("От " + data.from_id, data.text, false, null);
+        }
+    });
+    socket.on("block_user_result", function(data) {
+        if (data.ok) {
+            alert("Пользователь " + data.block_id + " успешно заблокирован!");
+        } else {
+            alert("Ошибка блокировки: " + data.error);
+        }
+    });
+    socket.on("unblock_user_result", function(data) {
+        if (data.ok) {
+            alert("Пользователь " + data.block_id + " разблокирован!");
+        } else {
+            alert("Ошибка разблокировки: " + data.error);
+        }
+    });
+    socket.on("ban_word_result", function(data) {
+        if (data.ok) {
+            alert("Слово '" + data.word + "' забанено");
+        } else {
+            alert("Ошибка бана слова: " + data.error);
+        }
+    });
+    socket.on("unban_word_result", function(data) {
+        if (data.ok) {
+            alert("Слово '" + data.word + "' разблокировано");
+        } else {
+            alert("Ошибка разблокировки слова: " + data.error);
+        }
+    });
+
+    function appendMessage(who, what, mine, to_id){
+        var cbox = document.getElementById("chatbox");
+        var d = document.createElement("div");
+        d.classList.toggle("my-msg", mine);
+        let dest = mine && to_id ? (' → <span>' + to_id + '</span>:') : ':';
+        d.innerHTML = '<b>' + who + dest + '</b> ' + escapeHtml(what);
+        cbox.appendChild(d);
+        cbox.scrollTop = cbox.scrollHeight;
+    }
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+</script>
+</body>
+</html>
