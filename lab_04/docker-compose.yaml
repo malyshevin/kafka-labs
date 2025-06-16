@@ -1,0 +1,128 @@
+version: '3.8'
+
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    ports:
+      - 9092:9092
+      - 29092:29092
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093'
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,DOCKER://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,DOCKER://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,DOCKER:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+    volumes:
+      - ./kafka-data:/tmp/kraft-combined-logs
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    command: ["postgres", "-c", "wal_level=logical"]
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d
+
+  kafka-connect:
+    image: debezium/connect:2.4
+    container_name: kafka-connect
+    depends_on:
+      - kafka
+      - postgres
+    ports:
+      - 8083:8083
+    environment:
+      # Список Kafka-брокеров, к которым подключается Kafka Connect
+      BOOTSTRAP_SERVERS: "kafka:29092"
+
+      # Уникальный идентификатор кластера Connect
+      GROUP_ID: 1
+
+      # Топики для хранения информации Connect
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+
+      # Конвертеры ключей и значений (здесь — JSON)
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER_SCHEMA_REGISTRY_URL: ""
+      KEY_CONVERTER_SCHEMA_REGISTRY_URL: ""
+
+      # Имя хоста для REST API Connect
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+
+      # Пути поиска плагинов
+      CONNECT_PLUGIN_PATH: /kafka/connect,/debezium-connector
+
+      JMXPORT: 8080
+      KAFKA_JMX_OPTS: >-
+        -Dcom.sun.management.jmxremote
+        -Dcom.sun.management.jmxremote.port=8080
+        -Dcom.sun.management.jmxremote.rmi.port=8080
+        -Dcom.sun.management.jmxremote.local.only=false
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Djava.rmi.server.hostname=kafka-connect
+  
+  kafka-connect-jmx:
+    build:
+      context: .
+      dockerfile: Dockerfile.jmx
+    container_name: kafka-connect-jmx
+    depends_on:
+      - kafka-connect
+    ports:
+      - 9100:9100
+    volumes:
+      - ./jmx-config.yml:/etc/jmx_exporter/config.yml
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8082:8080
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.0
+    restart: always
+    ports:
+      - "8081:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=lab_04
+      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka:29092
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - 9090:9090
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+
+networks:
+  default:
+    name: debezium_kraft_net

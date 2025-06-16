@@ -1,0 +1,5 @@
+FROM eclipse-temurin:17-jre
+RUN mkdir /etc/jmx_exporter
+ADD https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_httpserver/0.20.0/jmx_prometheus_httpserver-0.20.0.jar /jmx_prometheus_httpserver.jar
+ENTRYPOINT ["java", "-jar", "/jmx_prometheus_httpserver.jar"]
+CMD ["9100", "/etc/jmx_exporter/config.yml"]

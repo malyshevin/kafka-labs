@@ -1,0 +1,5 @@
+---
+startDelaySeconds: 0
+hostPort: kafka-connect:8080
+rules:
+  - pattern: ".*"
