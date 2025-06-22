@@ -1,0 +1,13 @@
+{
+    "version": 1,
+    "partitions": [
+        {"topic": "balanced_topic", "partition": 0, "replicas": [2,0,1]},
+        {"topic": "balanced_topic", "partition": 1, "replicas": [1,0,2]},
+        {"topic": "balanced_topic", "partition": 2, "replicas": [1,2,0]},
+        {"topic": "balanced_topic", "partition": 3, "replicas": [0,2,1]},
+        {"topic": "balanced_topic", "partition": 4, "replicas": [1,0,2]},
+        {"topic": "balanced_topic", "partition": 5, "replicas": [0,2,1]},
+        {"topic": "balanced_topic", "partition": 6, "replicas": [1,0,2]},
+        {"topic": "balanced_topic", "partition": 7, "replicas": [2,0,1]}
+    ]
+}

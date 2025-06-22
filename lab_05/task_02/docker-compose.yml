@@ -1,0 +1,132 @@
+version: '3'
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  broker1:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://broker1:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+
+      KAFKA_SSL_KEYSTORE_FILENAME: broker1.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: broker1_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: broker1_key_creds
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+
+      KAFKA_SSL_TRUSTSTORE_FILENAME: broker1.truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: broker1_truststore_creds
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'false'
+      KAFKA_SUPER_USERS: User:CN=broker1;User:CN=broker2;User:CN=broker3;User:CN=kafka-ui
+
+      KAFKA_SSL_CLIENT_AUTH: required
+    volumes:
+      - ./ssl/broker1/:/etc/kafka/secrets/
+      - ./ssl/producer/:/etc/kafka/producer/
+      - ./ssl/consumer/:/etc/kafka/consumer/
+    ports:
+      - "9092:9092"
+
+  broker2:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://broker2:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+
+      KAFKA_SSL_KEYSTORE_FILENAME: broker2.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: broker2_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: broker2_key_creds
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+
+      KAFKA_SSL_TRUSTSTORE_FILENAME: broker2.truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: broker2_truststore_creds
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'false'
+      KAFKA_SUPER_USERS: User:CN=broker1;User:CN=broker2;User:CN=broker3;User:CN=kafka-ui
+
+      KAFKA_SSL_CLIENT_AUTH: required
+    volumes:
+      - ./ssl/broker2/:/etc/kafka/secrets/
+    ports:
+      - "9094:9092"
+
+  broker3:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://broker3:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+
+      KAFKA_SSL_KEYSTORE_FILENAME: broker3.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: broker3_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: broker3_key_creds
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+
+      KAFKA_SSL_TRUSTSTORE_FILENAME: broker3.truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: broker3_truststore_creds
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'false'
+      KAFKA_SUPER_USERS: User:CN=broker1;User:CN=broker2;User:CN=broker3;User:CN=kafka-ui
+
+      KAFKA_SSL_CLIENT_AUTH: required
+    volumes:
+      - ./ssl/broker3/:/etc/kafka/secrets/
+    ports:
+      - "9096:9092"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker1:9092,broker2:9092,broker3:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SSL
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_TYPE: PKCS12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION: /etc/kafka-ui/ui.truststore.p12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_LOCATION: /etc/kafka-ui/ui.keystore.p12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEY_PASSWORD: changeit
+
+      KAFKA_UI_JAVA_OPTS: -Xmx2g
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./ssl/ui/ui.keystore.p12:/etc/kafka-ui/ui.keystore.p12
+      - ./ssl/ui/ui.truststore.p12:/etc/kafka-ui/ui.truststore.p12
+    depends_on:
+      - broker1
+      - broker2
+      - broker3
+      - zookeeper
