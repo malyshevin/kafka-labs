@@ -1,0 +1,8 @@
+name: production-topic
+cluster_id: c9q1ghr7teutetjc2loo
+partitions: "3"
+replication_factor: "3"
+topic_config_3:
+  cleanup_policy: CLEANUP_POLICY_DELETE
+  retention_ms: "604800000"
+  segment_bytes: "1073741824"
