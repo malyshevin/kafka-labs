@@ -1,0 +1,77 @@
+version: '3'
+services:
+  kafka-exporter-prod:
+    image: danielqsj/kafka-exporter:latest
+    container_name: kafka-exporter-prod
+    command: [
+      "--kafka.server=prod-broker1:9092",
+      "--kafka.server=prod-broker2:9092",
+      "--kafka.server=prod-broker3:9092",
+      "--tls.enabled",
+      "--tls.ca-file=/etc/kafka/secrets/ca.crt",
+      "--tls.cert-file=/etc/kafka/secrets/kafka-exporter.crt",
+      "--tls.key-file=/etc/kafka/secrets/kafka-exporter.key",
+      "--tls.insecure-skip-tls-verify",
+      "--topic.filter=.*"
+    ]
+    volumes:
+      - ./ssl/kafka-exporter/:/etc/kafka/secrets/
+      - ./ssl/ca/ca.crt:/etc/kafka/secrets/ca.crt
+    ports:
+      - "9308:9308"
+    networks:
+      - lab_07_v2_default
+
+  kafka-exporter-analytics:
+    image: danielqsj/kafka-exporter:latest
+    container_name: kafka-exporter-analytics
+    command: [
+      "--kafka.server=analytics-broker1:9092",
+      "--kafka.server=analytics-broker2:9092",
+      "--kafka.server=analytics-broker3:9092",
+      "--tls.enabled",
+      "--tls.ca-file=/etc/kafka/secrets/ca.crt",
+      "--tls.cert-file=/etc/kafka/secrets/kafka-exporter.crt",
+      "--tls.key-file=/etc/kafka/secrets/kafka-exporter.key",
+      "--tls.insecure-skip-tls-verify",
+      "--topic.filter=.*"
+    ]
+    volumes:
+      - ./ssl/kafka-exporter/:/etc/kafka/secrets/
+      - ./ssl/ca/ca.crt:/etc/kafka/secrets/ca.crt
+    ports:
+      - "9309:9308"
+    networks:
+      - lab_07_v2_default
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    depends_on:
+      - kafka-exporter-prod
+      - kafka-exporter-analytics
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/prometheus/kafka_alerts.yml:/etc/prometheus/kafka_alerts.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"
+    networks:
+      - lab_07_v2_default
+
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: grafana
+  #   depends_on:
+  #     - prometheus
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     GF_SECURITY_ADMIN_PASSWORD: admin
+  #   networks:
+  #     - lab_07_v2_default
+
+networks:
+  lab_07_v2_default:
+    external: true

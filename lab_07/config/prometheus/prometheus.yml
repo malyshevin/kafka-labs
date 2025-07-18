@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "kafka-prod"
+    static_configs:
+      - targets: ["kafka-exporter-prod:9308"]
+        labels:
+          cluster: "prod"
+
+  - job_name: "kafka-analytics"
+    static_configs:
+      - targets: ["kafka-exporter-analytics:9308"]
+        labels:
+          cluster: "analytics"
+
+rule_files:
+  - /etc/prometheus/kafka_alerts.yml

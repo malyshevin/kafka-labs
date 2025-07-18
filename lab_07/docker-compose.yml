@@ -1,0 +1,322 @@
+version: '3'
+services:
+
+  prod-zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 10
+      ZOOKEEPER_SYNC_LIMIT: 5
+    ports:
+      - "2181:2181"
+    volumes:
+      - ./tmp_data/prod-zookeeper-data:/var/lib/zookeeper/data  # Отдельный том для данных
+      - ./tmp_data/prod-zookeeper-log:/var/lib/zookeeper/log   # Отдельный лог
+
+  analytics-zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2182
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 10
+      ZOOKEEPER_SYNC_LIMIT: 5
+    ports:
+      - "2182:2182"
+    volumes:
+      - ./tmp_data/analytics-zookeeper-data:/var/lib/zookeeper/data
+      - ./tmp_data/analytics-zookeeper-log:/var/lib/zookeeper/log
+
+  prod-broker1:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - prod-zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: prod-zookeeper:2181
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://prod-broker1:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+
+      KAFKA_SSL_KEYSTORE_FILENAME: prod-broker1.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: prod-broker1_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: prod-broker1_key_creds
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+
+      KAFKA_SSL_TRUSTSTORE_FILENAME: prod-broker1.truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: prod-broker1_truststore_creds
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'false'
+      KAFKA_SUPER_USERS: User:CN=prod-broker1;User:CN=prod-broker2;User:CN=prod-broker3;User:CN=kafka-ui;User:CN=mirrormaker2;User:CN=schema-registry;User:CN=kafka-connect
+
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: "60000"
+    volumes:
+      - ./ssl/prod-broker1/:/etc/kafka/secrets/
+    ports:
+      - "9092:9092"
+
+  prod-broker2:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - prod-zookeeper
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: prod-zookeeper:2181
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://prod-broker2:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+
+      KAFKA_SSL_KEYSTORE_FILENAME: prod-broker2.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: prod-broker2_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: prod-broker2_key_creds
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+
+      KAFKA_SSL_TRUSTSTORE_FILENAME: prod-broker2.truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: prod-broker2_truststore_creds
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'false'
+      KAFKA_SUPER_USERS: User:CN=prod-broker1;User:CN=prod-broker2;User:CN=prod-broker3;User:CN=kafka-ui;User:CN=mirrormaker2;User:CN=schema-registry;User:CN=kafka-connect
+
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: "60000"
+    volumes:
+      - ./ssl/prod-broker2/:/etc/kafka/secrets/
+    ports:
+      - "9094:9092"
+
+  prod-broker3:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - prod-zookeeper
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: prod-zookeeper:2181
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://prod-broker3:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+
+      KAFKA_SSL_KEYSTORE_FILENAME: prod-broker3.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: prod-broker3_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: prod-broker3_key_creds
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+
+      KAFKA_SSL_TRUSTSTORE_FILENAME: prod-broker3.truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: prod-broker3_truststore_creds
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'false'
+      KAFKA_SUPER_USERS: User:CN=prod-broker1;User:CN=prod-broker2;User:CN=prod-broker3;User:CN=kafka-ui;User:CN=mirrormaker2;User:CN=schema-registry;User:CN=kafka-connect
+
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: "60000"
+    volumes:
+      - ./ssl/prod-broker3/:/etc/kafka/secrets/
+    ports:
+      - "9096:9092"
+
+  analytics-broker1:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - analytics-zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: analytics-zookeeper:2182
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://analytics-broker1:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+
+      KAFKA_SSL_KEYSTORE_FILENAME: analytics-broker1.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: analytics-broker1_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: analytics-broker1_key_creds
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+
+      KAFKA_SSL_TRUSTSTORE_FILENAME: analytics-broker1.truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: analytics-broker1_truststore_creds
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'false'
+      KAFKA_SUPER_USERS: User:CN=analytics-broker1;User:CN=analytics-broker2;User:CN=analytics-broker3;User:CN=kafka-ui;User:CN=mirrormaker2;User:CN=schema-registry
+
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: "60000"
+    volumes:
+      - ./ssl/analytics-broker1/:/etc/kafka/secrets/
+    ports:
+      - "9097:9092"
+
+  analytics-broker2:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - analytics-zookeeper
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: analytics-zookeeper:2182
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://analytics-broker2:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+
+      KAFKA_SSL_KEYSTORE_FILENAME: analytics-broker2.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: analytics-broker2_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: analytics-broker2_key_creds
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+
+      KAFKA_SSL_TRUSTSTORE_FILENAME: analytics-broker2.truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: analytics-broker2_truststore_creds
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'false'
+      KAFKA_SUPER_USERS: User:CN=analytics-broker1;User:CN=analytics-broker2;User:CN=analytics-broker3;User:CN=kafka-ui;User:CN=mirrormaker2;User:CN=schema-registry
+
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: "60000"
+    volumes:
+      - ./ssl/analytics-broker2/:/etc/kafka/secrets/
+    ports:
+      - "9098:9092"
+
+  analytics-broker3:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - analytics-zookeeper
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: analytics-zookeeper:2182
+      KAFKA_LISTENERS: SSL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: SSL://analytics-broker3:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: SSL
+
+      KAFKA_SSL_KEYSTORE_FILENAME: analytics-broker3.keystore.p12
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: analytics-broker3_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: analytics-broker3_key_creds
+      KAFKA_SSL_KEYSTORE_TYPE: PKCS12
+
+      KAFKA_SSL_TRUSTSTORE_FILENAME: analytics-broker3.truststore.p12
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: analytics-broker3_truststore_creds
+      KAFKA_SSL_TRUSTSTORE_TYPE: PKCS12
+
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: 'false'
+      KAFKA_SUPER_USERS: User:CN=analytics-broker1;User:CN=analytics-broker2;User:CN=analytics-broker3;User:CN=kafka-ui;User:CN=mirrormaker2;User:CN=schema-registry
+
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: "60000"
+    volumes:
+      - ./ssl/analytics-broker3/:/etc/kafka/secrets/
+    ports:
+      - "9099:9092"
+
+  mirrormaker2:
+    build: ./config/mirrormaker2
+    container_name: mirrormaker2
+    depends_on:
+      - prod-broker1
+      - prod-broker2
+      - prod-broker3
+      - analytics-broker1
+      - analytics-broker2
+      - analytics-broker3
+    command: connect-mirror-maker /etc/kafka-connect/mm2.properties
+    volumes:
+      - ./config/mirrormaker2:/etc/kafka-connect
+      - ./ssl/mirrormaker2/:/etc/kafka/secrets/
+    networks:
+      - default
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.4.0
+    container_name: schema-registry
+    depends_on:
+      - prod-broker1
+      - prod-broker2
+      - prod-broker3
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081 
+  
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: prod-broker1:9092,prod-broker2:9092,prod-broker3:9092
+      SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: SSL
+  
+      # SSL настройки
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_LOCATION: /etc/schema-registry/secrets/schema-registry.keystore.p12
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_PASSWORD: changeit
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEYSTORE_TYPE: PKCS12
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_KEY_PASSWORD: changeit
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_LOCATION: /etc/schema-registry/secrets/schema-registry.truststore.p12
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_PASSWORD: changeit
+      SCHEMA_REGISTRY_KAFKASTORE_SSL_TRUSTSTORE_TYPE: PKCS12
+      
+      # HTTPS endpoint
+      SCHEMA_REGISTRY_SSL_KEYSTORE_LOCATION: /etc/schema-registry/secrets/schema-registry.keystore.p12
+      SCHEMA_REGISTRY_SSL_KEYSTORE_PASSWORD: changeit
+      SCHEMA_REGISTRY_SSL_KEY_PASSWORD: changeit
+      SCHEMA_REGISTRY_SSL_TRUSTSTORE_LOCATION: /etc/schema-registry/secrets/schema-registry.truststore.p12
+      SCHEMA_REGISTRY_SSL_TRUSTSTORE_PASSWORD: changeit
+      SCHEMA_REGISTRY_SSL_CLIENT_AUTH: "false"
+      
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 3
+
+      # Кэширование для производительности
+      SCHEMA_REGISTRY_CACHE_CAPACITY: 10000
+
+    volumes:
+      - ./ssl/schema-registry/:/etc/schema-registry/secrets/
+    networks:
+      - default
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    environment:
+      KAFKA_CLUSTERS_0_NAME: prod
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: prod-broker1:9092,prod-broker2:9092,prod-broker3:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: prod-zookeeper:2181
+
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SSL
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_TYPE: PKCS12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION: /etc/kafka-ui/kafka-ui.truststore.p12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_LOCATION: /etc/kafka-ui/kafka-ui.keystore.p12
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEYSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_0_PROPERTIES_SSL_KEY_PASSWORD: changeit
+
+      KAFKA_CLUSTERS_1_NAME: analytics
+      KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: analytics-broker1:9092,analytics-broker2:9092,analytics-broker3:9092
+      KAFKA_CLUSTERS_1_ZOOKEEPER: analytics-zookeeper:2182
+
+      KAFKA_CLUSTERS_1_PROPERTIES_SECURITY_PROTOCOL: SSL
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_TRUSTSTORE_TYPE: PKCS12
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_TRUSTSTORE_LOCATION: /etc/kafka-ui/kafka-ui.truststore.p12
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_TRUSTSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_TYPE: PKCS12
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_LOCATION: /etc/kafka-ui/kafka-ui.keystore.p12
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEYSTORE_PASSWORD: changeit
+      KAFKA_CLUSTERS_1_PROPERTIES_SSL_KEY_PASSWORD: changeit
+
+      KAFKA_UI_JAVA_OPTS: -Xmx2g
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./ssl/kafka-ui:/etc/kafka-ui
+    depends_on:
+      - prod-broker1
+      - prod-broker2
+      - prod-broker3
+      - prod-zookeeper
+      - analytics-broker1
+      - analytics-broker2
+      - analytics-broker3
+      - analytics-zookeeper

@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "RecommendationRequest",
+  "fields": [
+    {"name": "request_id", "type": "string"},
+    {"name": "product_id", "type": ["null", "string"], "default": null},
+    {"name": "timestamp", "type": "string"},
+    {"name": "api_name", "type": "string"},
+    {"name": "request_type", "type": "string"},
+    {"name": "limit", "type": "int"}
+  ]
+}

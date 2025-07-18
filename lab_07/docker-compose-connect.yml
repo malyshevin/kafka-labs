@@ -1,0 +1,63 @@
+version: '3'
+services:
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.4.0
+    container_name: kafka-connect
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: prod-broker1:9092,prod-broker2:9092,prod-broker3:9092
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_GROUP_ID: connect-cluster
+      CONNECT_CONFIG_STORAGE_TOPIC: connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: connect-status
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: 'false'
+
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: 'true'
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    
+      # SSL настройки
+      CONNECT_SECURITY_PROTOCOL: SSL
+      CONNECT_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
+      CONNECT_SSL_VERIFY_HOSTNAMES: "false"
+      CONNECT_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka-connect.keystore.p12
+      CONNECT_SSL_KEYSTORE_PASSWORD: changeit
+      CONNECT_SSL_KEY_PASSWORD: changeit
+      CONNECT_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka-connect.truststore.p12
+      CONNECT_SSL_TRUSTSTORE_PASSWORD: changeit
+      CONNECT_SSL_CLIENT_AUTH: required
+
+      CONNECT_CONSUMER_SECURITY_PROTOCOL: "SSL"
+      CONNECT_CONSUMER_SSL_TRUSTSTORE_LOCATION: "/etc/kafka/secrets/kafka-connect.truststore.p12"
+      CONNECT_CONSUMER_SSL_TRUSTSTORE_PASSWORD: "changeit"
+      CONNECT_CONSUMER_SSL_KEYSTORE_LOCATION: "/etc/kafka/secrets/kafka-connect.keystore.p12"
+      CONNECT_CONSUMER_SSL_KEYSTORE_PASSWORD: "changeit"
+
+      # Дополнительные рекомендуемые параметры
+      CONNECT_PLUGIN_PATH: "/usr/share/java/kafka,/usr/share/confluent-hub-components,/etc/kafka-connect/jars"
+      CONNECT_LOG4J_LOGGERS: org.apache.kafka.connect=INFO,org.apache.kafka.connect.runtime.rest=WARN
+      CONNECT_REST_PORT: 8083
+      CONNECT_HEAP_OPTS: "-Xms1G -Xmx1G" # Не более 80% от лимита контейнера
+      CONNECT_JAVA_OPTS: "-XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./ssl/kafka-connect/:/etc/kafka/secrets/
+      - ./config/kafka-connect/connect-file-3.3.2.jar:/usr/share/java/kafka/connect-file-3.3.2.jar
+      - ./tmp_data/kafka-connect:/tmp/file-sink
+      # - kafka-connect-data:/tmp/file-sink
+    networks:
+      - lab_07_v2_default
+
+# volumes:
+#   kafka-connect-data:
+
+networks:
+  lab_07_v2_default:
+    external: true

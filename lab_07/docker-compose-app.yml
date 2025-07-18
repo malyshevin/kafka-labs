@@ -1,0 +1,38 @@
+version: '3'
+services:
+  api:
+    build: ./api
+    container_name: api
+    environment:
+      PROD_KAFKA_BOOTSTRAP_SERVERS: "prod-broker1:9092,prod-broker2:9092,prod-broker3:9092"
+      ANALYTICS_KAFKA_BOOTSTRAP_SERVERS: "analytics-broker1:9092,analytics-broker2:9092,analytics-broker3:9092"
+      SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      SSL_KEYSTORE_PASSWORD: changeit
+      SSL_KEY_PASSWORD: changeit
+    volumes:
+      - ./ssl/shop_api/:/app/ssl/shop_api/
+      - ./ssl/client_api/:/app/ssl/client_api/
+      - ./ssl/admin_api/:/app/ssl/admin_api/
+      - ./ssl/ca/ca.crt:/app/ssl/ca.crt
+      - ./tmp_data/kafka-connect/filtered_products.txt:/app/kafka-connect/filtered_products.txt
+    networks:
+      - lab_07_v2_default
+
+  block_products_app:
+    build: ./block_products_app
+    container_name: block_products_app
+    environment:
+      PROD_KAFKA_BOOTSTRAP_SERVERS: "kafka://prod-broker1:9092;kafka://prod-broker2:9092;kafka://prod-broker3:9092"
+      SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      SSL_KEYSTORE_PASSWORD: changeit
+      SSL_KEY_PASSWORD: changeit
+    command: faust -A app worker -l info
+    volumes:
+      - ./ssl/block_products_app/:/app/ssl/block_products_app/
+      - ./ssl/ca/ca.crt:/app/ssl/ca.crt
+    networks:
+      - lab_07_v2_default
+
+networks:
+  lab_07_v2_default:
+    external: true

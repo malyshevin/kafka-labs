@@ -1,0 +1,5 @@
+faust-streaming[rocksdb]
+confluent-kafka
+python-schema-registry-client
+cachetools
+authlib

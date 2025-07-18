@@ -1,0 +1,23 @@
+{
+    "name": "filtered-products-file-sink",
+    "config": {
+      "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
+      "tasks.max": "1",
+      "topics": "filtered_products",
+      "file": "/tmp/file-sink/filtered_products.txt",
+
+      "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+      "value.converter": "io.confluent.connect.avro.AvroConverter",
+      "value.converter.schema.registry.url": "http://schema-registry:8081",
+
+      "format.class": "org.apache.kafka.connect.json.JsonFormat",
+
+      "errors.tolerance": "none",
+      "errors.log.enable": "true",
+      "errors.log.include.messages": "true",
+      
+      "batch.size": "100",
+      "max.poll.records": "50",
+      "offset.flush.interval.ms": "10000"
+    }
+}

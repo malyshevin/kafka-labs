@@ -1,0 +1,21 @@
+groups:
+- name: kafka-monitoring
+  rules:
+  - alert: KafkaBrokersCountReduced
+    expr: kafka_brokers < 3
+    for: 10s
+    labels:
+      severity: warning
+    annotations:
+      summary: "Kafka cluster has only {{ $value }} brokers (expected 3)"
+      description: "В кластере осталось {{ $value }} брокеров вместо 3. Проверьте состояние брокеров."
+
+  - alert: KafkaBrokerMissing
+    expr: absent(kafka_broker_info{id="1"}) or absent(kafka_broker_info{id="2"}) or absent(kafka_broker_info{id="3"})
+    for: 10s
+    labels:
+      severity: critical
+    annotations:
+      summary: "Kafka Broker ID {{ $labels.id }} metrics are missing"
+      description: "Метрики для брокера с ID {{ $labels.id }} не поступают более 5 минут."
+  

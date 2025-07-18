@@ -1,0 +1,49 @@
+{
+  "type": "record",
+  "name": "Product",
+  "namespace": "com.shop",
+  "fields": [
+    {"name": "product_id", "type": "string"},
+    {"name": "name", "type": "string"},
+    {"name": "description", "type": ["string", "null"], "default": ""},
+    {"name": "price", "type": {
+      "type": "record",
+      "name": "Price",
+      "fields": [
+        {"name": "amount", "type": "double"},
+        {"name": "currency", "type": "string", "default": "RUB"}
+      ]
+    }},
+    {"name": "category", "type": ["string", "null"], "default": "Другое"},
+    {"name": "brand", "type": ["string", "null"], "default": null},
+    {"name": "stock", "type": {
+      "type": "record",
+      "name": "Stock",
+      "fields": [
+        {"name": "available", "type": "int", "default": 0},
+        {"name": "reserved", "type": "int", "default": 0}
+      ]
+    }},
+    {"name": "sku", "type": ["string", "null"], "default": null},
+    {"name": "tags", "type": {"type": "array", "items": "string"}, "default": []},
+    {"name": "images", "type": {
+      "type": "array",
+      "items": {
+        "type": "record",
+        "name": "Image",
+        "fields": [
+          {"name": "url", "type": "string"},
+          {"name": "alt", "type": ["string", "null"], "default": null}
+        ]
+      }
+    }, "default": []},
+    {"name": "specifications", "type": {
+      "type": "map",
+      "values": "string"
+    }, "default": {}},
+    {"name": "created_at", "type": "string", "default": ""},
+    {"name": "updated_at", "type": "string", "default": ""},
+    {"name": "index", "type": "string", "default": "products"},
+    {"name": "store_id", "type": "string", "default": "store_001"}
+  ]
+}
