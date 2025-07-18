@@ -69,7 +69,7 @@ done
 
 echo -e "⏳ Создание ключей для сторонних сервисов\n"
 
-for service in "kafka-ui" "mirrormaker2" "schema-registry" "shop_api" "client_api" "admin_api" "block_products_app" "kafka-exporter" "kafka-connect"; do
+for service in "kafka-ui" "mirrormaker2" "schema-registry" "shop_api" "client_api" "admin_api" "block_products_app" "kafka-exporter" "kafka-connect" "hdfs"; do
     echo -e "⏳ Создание ключей для $service"
 
     mkdir -p $service
